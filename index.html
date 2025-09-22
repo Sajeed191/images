@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>BGMI Scoreboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 0;
+      background: #111;
+      color: #eee;
+    }
+    header {
+      background: #222;
+      padding: 10px;
+      text-align: center;
+      font-size: 1.5em;
+      font-weight: bold;
+      color: var(--accent, #f5c542);
+    }
+    main { padding: 10px; }
+    h2 { color: var(--accent, #f5c542); margin-top: 20px; }
+    input, select, button {
+      padding: 6px;
+      margin: 4px 0;
+      border-radius: 6px;
+      border: none;
+      font-size: 1em;
+    }
+    button {
+      background: var(--accent, #f5c542);
+      color: #111;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover { opacity: 0.9; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+      background: #222;
+    }
+    th, td {
+      border: 1px solid #333;
+      padding: 6px;
+      text-align: center;
+    }
+    th { background: #333; }
+    .flex { display: flex; flex-wrap: wrap; gap: 10px; }
+    .card {
+      background: #222;
+      padding: 10px;
+      border-radius: 10px;
+      flex: 1;
+      min-width: 280px;
+    }
+    .highlight { color: var(--accent, #f5c542); font-weight: bold; }
+
+    /* Certificates */
+    .certificate {
+      width: 100%;
+      max-width: 500px;
+      margin: 15px auto;
+      padding: 20px;
+      border: 5px solid var(--accent, #f5c542);
+      border-radius: 15px;
+      text-align: center;
+      background: linear-gradient(135deg, #222, #111);
+      color: #fff;
+      box-shadow: 0 0 15px rgba(0,0,0,0.6);
+    }
+    .certificate h3 {
+      font-size: 1.5em;
+      margin-bottom: 10px;
+      color: var(--accent, #f5c542);
+    }
+    .certificate img {
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 3px solid var(--accent, #f5c542);
+      margin: 10px 0;
+    }
+    .certificate .place {
+      font-size: 1.2em;
+      font-weight: bold;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <header>BGMI Scoreboard</header>
+  <main>
+    <!-- Settings -->
+    <section class="card">
+      <h2>Settings</h2>
+      <label>Kill Point Value: 
+        <input type="number" id="killValue" value="1" min="0">
+      </label>
+      <button onclick="updateKillValue()">Update</button><br>
+      <label>Theme:
+        <select id="themeSelect" onchange="changeTheme()">
+          <option value="#f5c542">Yellow</option>
+          <option value="#42a5f5">Blue</option>
+          <option value="#ef5350">Red</option>
+          <option value="#66bb6a">Green</option>
+        </select>
+      </label>
+    </section>
+
+    <!-- Teams -->
+    <section class="card">
+      <h2>Teams</h2>
+      <input type="text" id="teamName" placeholder="Enter team name">
+      <input type="file" id="teamLogo" accept="image/*">
+      <button onclick="addTeam()">Add Team</button>
+      <ul id="teamList"></ul>
+    </section>
+
+    <!-- Match Input -->
+    <section class="card">
+      <h2>New Match</h2>
+      <form id="matchForm" onsubmit="addMatch(event)">
+        <table>
+          <thead><tr><th>Rank</th><th>Team</th><th>Kills</th></tr></thead>
+          <tbody id="placementsTable"></tbody>
+        </table>
+        <button type="submit">Save Match</button>
+      </form>
+    </section>
+
+    <!-- Leaderboard -->
+    <section class="card">
+      <h2>Leaderboard</h2>
+      <table>
+        <thead>
+          <tr><th>Rank</th><th>Logo</th><th>Team</th><th>Matches</th><th>Kills</th><th>Total</th></tr>
+        </thead>
+        <tbody id="leaderboard"></tbody>
+      </table>
+    </section>
+
+    <!-- Certificates -->
+    <section class="card">
+      <h2>Certificates</h2>
+      <div id="certificates"></div>
+    </section>
+
+  </main>
+
+  <script>
+    // Placement point system
+    const placementPoints = {1:10,2:6,3:5,4:4,5:3,6:2,7:1,8:1,
+      9:0,10:0,11:0,12:0,13:0,14:0,15:0,16:0};
+
+    let killValue = 1;
+    let teams = [];
+    let matches = [];
+
+    function saveData() {
+      const data = { killValue, teams, matches };
+      localStorage.setItem("bgmiData", JSON.stringify(data));
+      render();
+    }
+
+    function loadData() {
+      const data = JSON.parse(localStorage.getItem("bgmiData"));
+      if (data) {
+        killValue = data.killValue || 1;
+        teams = data.teams || [];
+        matches = data.matches || [];
+        document.getElementById("killValue").value = killValue;
+      }
+      render();
+    }
+
+    function updateKillValue() {
+      killValue = parseInt(document.getElementById("killValue").value) || 1;
+      saveData();
+    }
+
+    function addTeam() {
+      const name = document.getElementById("teamName").value.trim();
+      const file = document.getElementById("teamLogo").files[0];
+      if (!name) return;
+
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          teams.push({ id: Date.now(), name, logo: reader.result });
+          document.getElementById("teamName").value = "";
+          document.getElementById("teamLogo").value = "";
+          saveData();
+        };
+        reader.readAsDataURL(file);
+      } else {
+        teams.push({ id: Date.now(), name, logo: null });
+        document.getElementById("teamName").value = "";
+        saveData();
+      }
+    }
+
+    function removeTeam(id) {
+      teams = teams.filter(t => t.id !== id);
+      saveData();
+    }
+
+    function renderTeams() {
+      const ul = document.getElementById("teamList");
+      ul.innerHTML = "";
+      teams.forEach(t => {
+        const li = document.createElement("li");
+        li.textContent = t.name + " ";
+        const btn = document.createElement("button");
+        btn.textContent = "Remove";
+        btn.onclick = () => removeTeam(t.id);
+        li.appendChild(btn);
+        ul.appendChild(li);
+      });
+      renderPlacementTable();
+    }
+
+    function renderPlacementTable() {
+      const tbody = document.getElementById("placementsTable");
+      tbody.innerHTML = "";
+      for (let i=1; i<=16; i++) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>#${i}</td>
+          <td>
+            <select name="placement${i}">
+              <option value="">--</option>
+              ${teams.map(t=>`<option value="${t.id}">${t.name}</option>`).join("")}
+            </select>
+          </td>
+          <td><input type="number" name="kills${i}" min="0" value="0"></td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    function addMatch(e) {
+      e.preventDefault();
+      const form = new FormData(e.target);
+      const placements = {};
+      const kills = {};
+      for (let i=1; i<=16; i++) {
+        const teamId = form.get("placement"+i);
+        const kill = parseInt(form.get("kills"+i)) || 0;
+        if (teamId) {
+          placements[i] = teamId;
+          kills[teamId] = kill;
+        }
+      }
+      matches.push({ placements, kills });
+      saveData();
+      e.target.reset();
+    }
+
+    function calculateTotals() {
+      const totals = {};
+      teams.forEach(t => {
+        totals[t.id] = { team:t.name, logo:t.logo, matches:0, kills:0, points:0 };
+      });
+      matches.forEach(m => {
+        for (let i=1; i<=16; i++) {
+          const teamId = m.placements[i];
+          if (teamId && totals[teamId]) {
+            totals[teamId].matches++;
+            const placementPts = placementPoints[i] || 0;
+            const killPts = (m.kills[teamId]||0) * killValue;
+            totals[teamId].kills += (m.kills[teamId]||0);
+            totals[teamId].points += placementPts + killPts;
+          }
+        }
+      });
+      return totals;
+    }
+
+    function renderLeaderboard() {
+      const tbody = document.getElementById("leaderboard");
+      tbody.innerHTML = "";
+      const totals = Object.values(calculateTotals());
+      totals.sort((a,b)=>b.points - a.points || b.kills - a.kills);
+      totals.forEach((t,idx)=>{
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${idx+1}</td>
+          <td>${t.logo? `<img src="${t.logo}" style="width:40px;height:40px;border-radius:50%;">`:"-"}</td>
+          <td>${t.team}</td>
+          <td>${t.matches}</td>
+          <td>${t.kills}</td>
+          <td class="highlight">${t.points}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderCertificates() {
+      const container = document.getElementById("certificates");
+      container.innerHTML = "";
+
+      const totals = Object.values(calculateTotals());
+      if (!totals.length) return;
+
+      // Top 3 by Points
+      const topPoints = [...totals].sort((a,b)=>b.points-a.points).slice(0,3);
+      topPoints.forEach((t,idx)=>{
+        const div = document.createElement("div");
+        div.className = "certificate";
+        div.innerHTML = `
+          <h3>🏆 Overall Points #${idx+1}</h3>
+          ${t.logo? `<img src="${t.logo}">`:""}
+          <div class="place">${t.team}</div>
+          <div>Total Points: ${t.points}</div>
+        `;
+        container.appendChild(div);
+      });
+
+      // Top 3 by Kills
+      const topKills = [...totals].sort((a,b)=>b.kills-a.kills).slice(0,3);
+      topKills.forEach((t,idx)=>{
+        const div = document.createElement("div");
+        div.className = "certificate";
+        div.innerHTML = `
+          <h3>🔥 Most Kills #${idx+1}</h3>
+          ${t.logo? `<img src="${t.logo}">`:""}
+          <div class="place">${t.team}</div>
+          <div>Total Kills: ${t.kills}</div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function changeTheme() {
+      const color = document.getElementById("themeSelect").value;
+      document.documentElement.style.setProperty("--accent", color);
+      saveData();
+    }
+
+    function render() {
+      renderTeams();
+      renderLeaderboard();
+      renderCertificates();
+    }
+
+    loadData();
+  </script>
+</body>
+</html> 
