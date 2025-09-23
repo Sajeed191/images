@@ -20,20 +20,32 @@
     }
     nav {
       display: flex;
-      flex-wrap: wrap;
+      overflow-x: auto;
       background: #333;
+      white-space: nowrap;
     }
     nav a {
-      flex: 1;
-      text-align: center;
-      padding: 12px;
-      text-decoration: none;
-      color: #eee;
+      flex: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      min-width: 120px;
+      cursor: pointer;
       transition: 0.3s;
     }
-    nav a:hover {
+    nav a img {
+      max-height: 40px;
+      max-width: 100px;
+      object-fit: contain;
+      filter: brightness(0) invert(1);
+      transition: 0.3s;
+    }
+    nav a.active, nav a:hover {
       background: #f5a623;
-      color: #111;
+    }
+    nav a.active img, nav a:hover img {
+      filter: none;
     }
     section {
       display: none;
@@ -62,16 +74,16 @@
   <header>🎮 Pro Gamers Hub</header>
 
   <nav>
-    <a href="#" onclick="showGame('bgmi')">BGMI</a>
-    <a href="#" onclick="showGame('efootball')">eFootball</a>
-    <a href="#" onclick="showGame('valorant')">Valorant</a>
-    <a href="#" onclick="showGame('cod')">Call of Duty</a>
-    <a href="#" onclick="showGame('apex')">Apex Legends</a>
-    <a href="#" onclick="showGame('fortnite')">Fortnite</a>
-    <a href="#" onclick="showGame('genshin')">Genshin Impact</a>
-    <a href="#" onclick="showGame('lol')">League of Legends</a>
-    <a href="#" onclick="showGame('minecraft')">Minecraft</a>
-    <a href="#" onclick="showGame('freefire')">Free Fire</a>
+    <a onclick="showGame('bgmi')" class="active"><img src="https://upload.wikimedia.org/wikipedia/commons/9/99/Battlegrounds_Mobile_India%2C_BGMI_LOGO_white_-_1082x360.png" alt="BGMI"></a>
+    <a onclick="showGame('efootball')"><img src="https://upload.wikimedia.org/wikipedia/commons/e/ee/EFootball_logo.svg" alt="eFootball"></a>
+    <a onclick="showGame('valorant')"><img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Valorant_logo.svg" alt="Valorant"></a>
+    <a onclick="showGame('cod')"><img src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Call_of_Duty_Mobile_Logo.png" alt="COD Mobile"></a>
+    <a onclick="showGame('apex')"><img src="https://upload.wikimedia.org/wikipedia/commons/0/09/Apex_Legends_logo.jpg" alt="Apex Legends"></a>
+    <a onclick="showGame('fortnite')"><img src="https://upload.wikimedia.org/wikipedia/commons/4/42/FNBattleRoyale_Black_Text.svg" alt="Fortnite"></a>
+    <a onclick="showGame('genshin')"><img src="https://upload.wikimedia.org/wikipedia/en/5/5d/Genshin_Impact_logo.svg" alt="Genshin Impact"></a>
+    <a onclick="showGame('lol')"><img src="https://upload.wikimedia.org/wikipedia/commons/d/d1/Lol_logo.png" alt="LoL"></a>
+    <a onclick="showGame('minecraft')"><img src="https://upload.wikimedia.org/wikipedia/commons/9/91/Logo_Minecraft.png" alt="Minecraft"></a>
+    <a onclick="showGame('freefire')"><img src="https://upload.wikimedia.org/wikipedia/en/c/c5/Logo_of_Garena_Free_Fire.png" alt="Free Fire"></a>
   </nav>
 
   <!-- BGMI -->
@@ -177,7 +189,12 @@
   <script>
     function showGame(gameId) {
       document.querySelectorAll("section").forEach(sec => sec.classList.remove("active"));
+      document.querySelectorAll("nav a").forEach(link => link.classList.remove("active"));
+      
       document.getElementById(gameId).classList.add("active");
+      document.querySelector(`nav a[onclick="showGame('${gameId}')"]`).classList.add("active");
+      
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   </script>
 </body>
